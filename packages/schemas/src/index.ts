@@ -12,6 +12,7 @@ import time from './date/time.js';
 import select from './select/index.js';
 import radioGroup from './radioGroup/index.js';
 import checkbox from './checkbox/index.js';
+import richText from './richText/index.js';
 
 const builtInPlugins = { Text: text };
 
@@ -33,7 +34,9 @@ export {
   select,
   radioGroup,
   checkbox,
+  richText,
 };
 
 // Export utility functions
 export { getDynamicHeightsForTable } from './tables/dynamicTemplate.js';
+export * as richTextFonts from './richText/fonts.js';

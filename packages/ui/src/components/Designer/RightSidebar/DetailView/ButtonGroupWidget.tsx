@@ -4,8 +4,9 @@ import type { PropPanelWidgetProps, SchemaForUI } from '@pdfme/common';
 interface ButtonConfig {
   key: string;
   icon: string;
-  type: 'boolean' | 'select';
+  type: 'boolean' | 'select' | 'action';
   value?: string;
+  action?: () => void;
 }
 
 const ButtonGroupWidget = (props: PropPanelWidgetProps) => {
@@ -17,6 +18,12 @@ const ButtonGroupWidget = (props: PropPanelWidgetProps) => {
     const type = btn.type;
     const ids = activeElements.map((ae) => ae.id);
     const ass = schemas.filter((s) => ids.includes(s.id));
+
+    if ('action' in btn && btn.action) {
+      btn.action();
+      return;
+    }
+
     changeSchemas(
       ass.map((s: SchemaForUI) => {
         const oldValue = Boolean((s as Record<string, unknown>)[key] ?? false);
@@ -29,9 +36,12 @@ const ButtonGroupWidget = (props: PropPanelWidgetProps) => {
   const isActive = (btn: ButtonConfig) => {
     const key = btn.key;
     const type = btn.type;
+
     let active = false;
     const ids = activeElements.map((ae) => ae.id);
+
     const ass = schemas.filter((s) => ids.includes(s.id));
+
     ass.forEach((s: SchemaForUI) => {
       // Cast schema to Record to safely access dynamic properties
       const schemaRecord = s as Record<string, unknown>;
