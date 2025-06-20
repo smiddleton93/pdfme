@@ -36,6 +36,6 @@ import { PDFRenderProps } from '@pdfme/common';
 export const pdfRender = async (arg: PDFRenderProps<RichTextSchema>) => {
   const { value, pdfDoc, page, schema } = arg;
   if (!value) return;
-
+  console.log(schema);
   await drawHtmlWithSchema(pdfDoc, page, value, schema);
 };

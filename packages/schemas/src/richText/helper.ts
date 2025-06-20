@@ -84,7 +84,7 @@ export async function drawHtmlWithSchema(
     return fontRegular;
   }
 
-  const defaultFontSize = 12;
+  const defaultFontSize = 10;
 
   const htmlTree = parseDocument(htmlString);
 
@@ -193,6 +193,7 @@ export async function drawHtmlWithSchema(
       const words = run.text.split(/(\s+)/).filter((w) => w.trim() !== '' || w === ' ');
 
       for (const word of words) {
+        console.log(currentLineWidth);
         const fontSize = run.style.fontSize ?? defaultFontSize;
         const font = run.style.font ?? fontRegular;
         const safeWord = word;

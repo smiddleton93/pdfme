@@ -9,8 +9,11 @@ import { getExtraFormatterSchema } from './extraFormatter.js';
 //   },
 // }
 
+const testText =
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam nec arcu neque. In efficitur arcu vel turpis ultricies, sit amet malesuada metus molestie. Aliquam eget dui urna. Donec lacinia nibh at lectus suscipit, nec maximus augue tempor. Pellentesque scelerisque venenatis orci, vitae aliquam quam convallis eu. In cursus et ipsum.';
+
 export const propPanel: PropPanel<RichTextSchema> = {
-  schema: ({ options, i18n, activeSchema }) => {
+  schema: ({ i18n, activeSchema }) => {
     // const font = options.font || { [DEFAULT_FONT_NAME]: { data: '', fallback: true } };
 
     const textSchema: Record<string, PropPanelSchema> = {
@@ -22,7 +25,7 @@ export const propPanel: PropPanel<RichTextSchema> = {
   defaultSchema: {
     name: '',
     type: 'richText',
-    content: '',
+    content: `<p>${testText}</p>`,
     position: { x: 0, y: 0 },
     width: 100,
     height: 50,

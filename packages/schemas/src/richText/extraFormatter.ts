@@ -16,17 +16,19 @@ interface GroupButton {
 
 const buttonAction = (key: Formatter, id: string) => {
   return () => {
-    console.log('button action');
     const editor = getEditor(id);
-    console.log(editor);
+
     switch (key) {
       case Formatter.UNDERLINE:
+        editor.commands.focus();
         editor.commands.toggleUnderline();
         break;
       case Formatter.BOLD:
+        editor.commands.focus();
         editor.commands.toggleBold();
         break;
       case Formatter.ITALIC:
+        editor.commands.focus();
         editor.commands.toggleItalic();
         break;
       default:

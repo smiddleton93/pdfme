@@ -70,7 +70,12 @@ const ButtonGroupWidget = (props: PropPanelWidgetProps) => {
             <Button
               type={active ? 'primary' : undefined}
               ghost={active}
-              onClick={() => apply(btn)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                apply(btn);
+              }}
               style={{
                 padding: 7,
                 zIndex: active ? 2 : 0,

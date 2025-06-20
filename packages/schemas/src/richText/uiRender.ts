@@ -5,7 +5,7 @@ import { DEFAULT_BOLD_FONT } from './fonts';
 import { initEditor } from './editor';
 
 export const uiRender = (arg: UIRenderProps<RichTextSchema>) => {
-  const { rootElement } = arg;
+  const { rootElement, onChange, stopEditing } = arg;
 
   if (!arg.schema.id || typeof arg.schema.id !== 'string' || arg.schema.id === 'richText') {
     return;
@@ -26,5 +26,20 @@ export const uiRender = (arg: UIRenderProps<RichTextSchema>) => {
     .richText${arg.schema.id} strong { font-family: ${DEFAULT_BOLD_FONT};}
   `;
   document.head.appendChild(style);
-  initEditor(arg.schema.id);
+  const editor = initEditor(arg.schema.id, arg.value);
+
+  // editor.on('update', () => {
+  //   const content = editor.getHTML();
+  //   // onChange?.({ key: 'content', value: content });
+  //   console.log(mode);
+  //   if (mode === 'designer') {
+  //     editor.chain().focus().run();
+  //   }
+  // });
+
+  editor.on('blur', () => {
+    const content = editor.getHTML();
+    onChange?.({ key: 'content', value: content });
+    stopEditing?.();
+  });
 };
