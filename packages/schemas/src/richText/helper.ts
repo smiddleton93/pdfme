@@ -11,6 +11,7 @@ import { RichTextSchema } from './types';
 import { getFontKitFont, widthOfTextAtSize } from '../text/helper';
 import * as richTextFonts from './fonts';
 import { DEFAULT_FONT_NAME, Font, getDefaultFont } from '@pdfme/common';
+import { convertForPdfLayoutProps } from '../utils';
 // const DEFAULT_BOLD_FONT = 'Roboto-Bold';
 // const DEFAULT_ITALIC_FONT = 'Roboto-Italic';
 // const DEFAULT_BOLD_ITALIC_FONT = 'Roboto-BoldItalic';
@@ -131,6 +132,14 @@ export async function drawHtmlWithSchema(
 
   const _cache = new Map();
 
+  const pageHeight = page.getHeight();
+
+  const {
+    width,
+    // height,
+    position: { x, y },
+  } = convertForPdfLayoutProps({ schema, pageHeight, applyRotateTranslate: false });
+
   const [pdfFontObj, fontKitFont] = await Promise.all([
     embedAndGetFontObj({
       pdfDoc,
@@ -240,7 +249,7 @@ export async function drawHtmlWithSchema(
 
   // --- Render blocks one by one ---
 
-  let cursorY = schema.position.y;
+  let cursorY = y;
 
   for (const block of blocks) {
     cursorY = wrapAndDrawBlock(block.runs, cursorY, block.type === 'list-item' ? 8 : 0);
@@ -253,6 +262,7 @@ export async function drawHtmlWithSchema(
     let currentLine: TextRun[] = [];
     let currentLineWidth = 0;
     let cursorY = startY;
+    console.log('Drawing block at Y:', cursorY);
 
     for (const run of runs) {
       const words = run.text.split(/(\s+)/).filter((w) => w.trim() !== '' || w === ' ');
@@ -264,14 +274,7 @@ export async function drawHtmlWithSchema(
         const safeWord = word;
         const wordWidth = widthOfTextAtSize(safeWord, fontKitFont, fontSize, 0);
 
-        console.log({
-          leftIndent,
-          currentLineWidth,
-          wordWidth,
-          schemaWidth: schema.width,
-          word,
-        });
-        if (currentLineWidth + wordWidth > schema.width - leftIndent) {
+        if (currentLineWidth + wordWidth > width - leftIndent) {
           // Draw current line
           drawLine(currentLine, cursorY, leftIndent);
           cursorY -= fontSize + 4;
@@ -293,7 +296,7 @@ export async function drawHtmlWithSchema(
   }
 
   function drawLine(line: TextRun[], y: number, leftIndent: number) {
-    let cursorX = schema.position.x + leftIndent;
+    let cursorX = x + leftIndent;
 
     for (const run of line) {
       const fontSize = run.style.fontSize ?? defaultFontSize;
