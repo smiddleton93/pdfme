@@ -3,11 +3,17 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { parseDocument, DomUtils } from 'htmlparser2';
-import { PDFDocument, PDFPage, StandardFonts, PDFFont, rgb, RGB } from '@pdfme/pdf-lib';
+// import * as fontkit from 'fontkit';
+import { PDFDocument, PDFFont, PDFPage, rgb, RGB } from '@pdfme/pdf-lib';
 
 import { type ChildNode as Node, type Element } from 'domhandler';
 import { RichTextSchema } from './types';
-
+import { getFontKitFont, widthOfTextAtSize } from '../text/helper';
+import * as richTextFonts from './fonts';
+import { DEFAULT_FONT_NAME, Font, getDefaultFont } from '@pdfme/common';
+// const DEFAULT_BOLD_FONT = 'Roboto-Bold';
+// const DEFAULT_ITALIC_FONT = 'Roboto-Italic';
+// const DEFAULT_BOLD_ITALIC_FONT = 'Roboto-BoldItalic';
 // --- Types ---
 
 type Style = {
@@ -16,7 +22,8 @@ type Style = {
   underline?: boolean;
   bold?: boolean;
   italic?: boolean;
-  font?: PDFFont; // this will be assigned after resolving
+  fonwt?: Font;
+  fontName?: string;
 };
 
 type TextRun = {
@@ -27,6 +34,37 @@ type TextRun = {
 type Block = {
   runs: TextRun[];
   type: 'paragraph' | 'list-item';
+};
+
+const embedAndGetFontObj = async (arg: {
+  pdfDoc: PDFDocument;
+  font: Font;
+  _cache: Map<PDFDocument, { [key: string]: PDFFont }>;
+}) => {
+  const { pdfDoc, font, _cache } = arg;
+  if (_cache.has(pdfDoc)) {
+    return _cache.get(pdfDoc) as { [key: string]: PDFFont };
+  }
+
+  const fontValues = await Promise.all(
+    Object.values(font).map(async (v) => {
+      let fontData = v.data;
+      if (typeof fontData === 'string' && fontData.startsWith('http')) {
+        fontData = await fetch(fontData).then((res) => res.arrayBuffer());
+      }
+      return pdfDoc.embedFont(fontData, {
+        subset: typeof v.subset === 'undefined' ? true : v.subset,
+      });
+    }),
+  );
+
+  const fontObj = Object.keys(font).reduce(
+    (acc, cur, i) => Object.assign(acc, { [cur]: fontValues[i] }),
+    {} as { [key: string]: PDFFont },
+  );
+
+  _cache.set(pdfDoc, fontObj);
+  return fontObj;
 };
 
 function parseInlineStyles(styleString: string): Partial<Style> {
@@ -63,6 +101,18 @@ function parseInlineStyles(styleString: string): Partial<Style> {
 
   return result;
 }
+const fonts: Font = {
+  [richTextFonts.DEFAULT_BOLD_FONT]: {
+    data: richTextFonts.DEFAULT_BOLD_FONT_DATA,
+  },
+  [richTextFonts.DEFAULT_ITALIC_FONT]: {
+    data: richTextFonts.DEFAULT_ITALIC_FONT_DATA,
+  },
+  [richTextFonts.DEFAULT_BOLD_ITALIC_FONT]: {
+    data: richTextFonts.DEFAULT_BOLD_ITALIC_DATA,
+  },
+  ...getDefaultFont(),
+};
 
 // --- Main Function ---
 
@@ -72,29 +122,41 @@ export async function drawHtmlWithSchema(
   htmlString: string,
   schema: RichTextSchema,
 ): Promise<void> {
-  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-  const fontBoldItalic = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
-
-  function resolveFont(style: Style): PDFFont {
-    if (style.bold && style.italic) return fontBoldItalic;
-    if (style.bold) return fontBold;
-    if (style.italic) return fontItalic;
-    return fontRegular;
-  }
+  // const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  // const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  // const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+  // const fontBoldItalic = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
 
   const defaultFontSize = 10;
 
+  const _cache = new Map();
+
+  const [pdfFontObj, fontKitFont] = await Promise.all([
+    embedAndGetFontObj({
+      pdfDoc,
+      font: fonts,
+      _cache,
+    }),
+    getFontKitFont(schema.fontName, fonts, _cache),
+  ]);
+
   const htmlTree = parseDocument(htmlString);
 
-  function parseNode(
+  const getFontName = (style: Style): string => {
+    if (style.fontName) return style.fontName;
+    if (style.bold && style.italic) return richTextFonts.DEFAULT_BOLD_ITALIC_FONT;
+    if (style.bold) return richTextFonts.DEFAULT_BOLD_FONT;
+    if (style.italic) return richTextFonts.DEFAULT_ITALIC_FONT;
+    return DEFAULT_FONT_NAME;
+  };
+
+  async function parseNode(
     node: Node,
     inheritedStyle: Style = {},
     parentTag: string | null = null,
     listType: 'ul' | 'ol' | null = null,
     listIndex: number = 1,
-  ): Block[] {
+  ): Promise<Block[]> {
     if (node.type === 'text') {
       return [
         {
@@ -115,7 +177,7 @@ export async function drawHtmlWithSchema(
       if (element.name === 'strong') newStyle.bold = true;
       if (element.name === 'em') newStyle.italic = true;
 
-      newStyle.font = resolveFont(newStyle);
+      newStyle.fontName = getFontName(newStyle);
 
       if (element.attribs?.style) {
         const inlineStyles = parseInlineStyles(element.attribs.style);
@@ -128,7 +190,7 @@ export async function drawHtmlWithSchema(
         for (const child of element.children) {
           if (child.type === 'tag' && child.name === 'li') {
             const bullet = element.name === 'ul' ? '• ' : `${index}. `;
-            const childBlocks = parseNode(child, newStyle, 'li', element.name, index);
+            const childBlocks = await parseNode(child, newStyle, 'li', element.name, index);
             if (childBlocks.length > 0) {
               childBlocks[0].runs.unshift({
                 text: bullet,
@@ -146,7 +208,7 @@ export async function drawHtmlWithSchema(
       let blocks: Block[] = [];
       for (const child of element.children) {
         const childBlocks = parseNode(child, newStyle, element.name, listType, listIndex);
-        blocks = mergeBlocks(blocks, childBlocks, parentTag);
+        blocks = mergeBlocks(blocks, await childBlocks, parentTag);
       }
       return blocks;
     }
@@ -171,7 +233,10 @@ export async function drawHtmlWithSchema(
     return existing.concat(incoming);
   }
 
-  const blocks: Block[] = htmlTree.children.flatMap((node) => parseNode(node));
+  const blocksNested: Block[][] = await Promise.all(
+    htmlTree.children.map((node) => parseNode(node)),
+  );
+  const blocks: Block[] = blocksNested.flat();
 
   // --- Render blocks one by one ---
 
@@ -193,12 +258,19 @@ export async function drawHtmlWithSchema(
       const words = run.text.split(/(\s+)/).filter((w) => w.trim() !== '' || w === ' ');
 
       for (const word of words) {
-        console.log(currentLineWidth);
         const fontSize = run.style.fontSize ?? defaultFontSize;
-        const font = run.style.font ?? fontRegular;
-        const safeWord = word;
-        const wordWidth = font.widthOfTextAtSize(safeWord, fontSize);
+        // const fontName = getFontName(run.style);
 
+        const safeWord = word;
+        const wordWidth = widthOfTextAtSize(safeWord, fontKitFont, fontSize, 0);
+
+        console.log({
+          leftIndent,
+          currentLineWidth,
+          wordWidth,
+          schemaWidth: schema.width,
+          word,
+        });
         if (currentLineWidth + wordWidth > schema.width - leftIndent) {
           // Draw current line
           drawLine(currentLine, cursorY, leftIndent);
@@ -225,17 +297,19 @@ export async function drawHtmlWithSchema(
 
     for (const run of line) {
       const fontSize = run.style.fontSize ?? defaultFontSize;
-      const font = run.style.font ?? fontRegular;
+      const fontName = getFontName(run.style);
+
+      const pdfFontValue = pdfFontObj && pdfFontObj[fontName];
       const color = run.style.color ?? rgb(0, 0, 0);
 
       page.drawText(run.text, {
         x: cursorX,
         y,
         size: fontSize,
-        font,
+        font: pdfFontValue,
         color,
       });
-      const textWidth = font.widthOfTextAtSize(run.text, fontSize);
+      const textWidth = widthOfTextAtSize(run.text, fontKitFont, fontSize, 0);
 
       if (run.style.underline) {
         page.drawLine({

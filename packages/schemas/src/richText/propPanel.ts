@@ -1,4 +1,4 @@
-import { DEFAULT_FONT_NAME, PropPanel, PropPanelSchema, getFallbackFontName } from '@pdfme/common';
+import { PropPanel, PropPanelSchema } from '@pdfme/common';
 import type { RichTextSchema } from './types.js';
 import { getExtraFormatterSchema } from './extraFormatter.js';
 
