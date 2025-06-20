@@ -8,7 +8,6 @@ import { PDFDocument, PDFFont, PDFPage, rgb, RGB } from '@pdfme/pdf-lib';
 
 import { type ChildNode as Node, type Element } from 'domhandler';
 import { RichTextSchema } from './types';
-import { getFontKitFont, widthOfTextAtSize } from '../text/helper';
 import * as richTextFonts from './fonts';
 import { DEFAULT_FONT_NAME, Font, getDefaultFont } from '@pdfme/common';
 import { convertForPdfLayoutProps } from '../utils';
@@ -140,19 +139,18 @@ export async function drawHtmlWithSchema(
     position: { x, y },
   } = convertForPdfLayoutProps({ schema, pageHeight, applyRotateTranslate: false });
 
-  const [pdfFontObj, fontKitFont] = await Promise.all([
+  const [pdfFontObj] = await Promise.all([
     embedAndGetFontObj({
       pdfDoc,
       font: fonts,
       _cache,
     }),
-    getFontKitFont(schema.fontName, fonts, _cache),
+    // getFontKitFont(schema.fontName, fonts, _cache),
   ]);
 
   const htmlTree = parseDocument(htmlString);
 
   const getFontName = (style: Style): string => {
-    if (style.fontName) return style.fontName;
     if (style.bold && style.italic) return richTextFonts.DEFAULT_BOLD_ITALIC_FONT;
     if (style.bold) return richTextFonts.DEFAULT_BOLD_FONT;
     if (style.italic) return richTextFonts.DEFAULT_ITALIC_FONT;
@@ -185,9 +183,9 @@ export async function drawHtmlWithSchema(
       if (element.name === 'u') newStyle.underline = true;
       if (element.name === 'strong') newStyle.bold = true;
       if (element.name === 'em') newStyle.italic = true;
-
+      console.log({ newStyle });
       newStyle.fontName = getFontName(newStyle);
-
+      console.log('Font name:', newStyle.fontName, 'for element:', element.name);
       if (element.attribs?.style) {
         const inlineStyles = parseInlineStyles(element.attribs.style);
         Object.assign(newStyle, inlineStyles);
@@ -269,10 +267,11 @@ export async function drawHtmlWithSchema(
 
       for (const word of words) {
         const fontSize = run.style.fontSize ?? defaultFontSize;
-        // const fontName = getFontName(run.style);
+        const fontName = getFontName(run.style);
+        const font = pdfFontObj && pdfFontObj[fontName];
 
         const safeWord = word;
-        const wordWidth = widthOfTextAtSize(safeWord, fontKitFont, fontSize, 0);
+        const wordWidth = font.widthOfTextAtSize(safeWord, fontSize);
 
         if (currentLineWidth + wordWidth > width - leftIndent) {
           // Draw current line
@@ -302,17 +301,17 @@ export async function drawHtmlWithSchema(
       const fontSize = run.style.fontSize ?? defaultFontSize;
       const fontName = getFontName(run.style);
 
-      const pdfFontValue = pdfFontObj && pdfFontObj[fontName];
+      const font = pdfFontObj && pdfFontObj[fontName];
       const color = run.style.color ?? rgb(0, 0, 0);
 
       page.drawText(run.text, {
         x: cursorX,
         y,
         size: fontSize,
-        font: pdfFontValue,
+        font,
         color,
       });
-      const textWidth = widthOfTextAtSize(run.text, fontKitFont, fontSize, 0);
+      const textWidth = font.widthOfTextAtSize(run.text, fontSize);
 
       if (run.style.underline) {
         page.drawLine({

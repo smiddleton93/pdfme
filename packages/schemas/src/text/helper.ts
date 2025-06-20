@@ -99,6 +99,7 @@ export const widthOfTextAtSize = (
   const standardWidth =
     glyphs.reduce((totalWidth, glyph) => totalWidth + glyph.advanceWidth * scale, 0) *
     (fontSize / 1000);
+  console.log(calculateCharacterSpacing(text, characterSpacing));
   return standardWidth + calculateCharacterSpacing(text, characterSpacing);
 };
 
