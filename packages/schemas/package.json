@@ -62,6 +62,7 @@
     "@tiptap/extension-italic": "2.14.0",
     "@tiptap/extension-paragraph": "2.14.0",
     "@tiptap/extension-text": "2.14.0",
+    "@tiptap/extension-underline": "^2.14.1",
     "@tiptap/pm": "2.14.0",
     "air-datepicker": "^3.6.0",
     "bwip-js": "^4.6.0",

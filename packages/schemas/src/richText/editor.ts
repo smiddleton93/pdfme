@@ -5,13 +5,14 @@ import Document from '@tiptap/extension-document';
 import Italic from '@tiptap/extension-italic';
 import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
+import Underline from '@tiptap/extension-underline';
 
 const editorMap: Record<string, Editor> = {};
 
 export const initEditor = (id: string) => {
   const editor = new Editor({
     element: document.querySelector(`.richText${id}`) as HTMLElement,
-    extensions: [Document, Bold, Italic, Paragraph, Text],
+    extensions: [Document, Bold, Italic, Paragraph, Text, Underline],
     content: '<p>Hello <strong>Wor</strong>ld!</p>',
     injectCSS: false,
     editable: true,
@@ -23,8 +24,12 @@ export const initEditor = (id: string) => {
 
 export const getEditor = (id: string) => {
   const editor = editorMap[id];
-  if (!editor || !editor.isInitialized) {
-    return null;
+
+  if (!editor) {
+    return initEditor(id);
+  }
+  if (!editor.isInitialized) {
+    setTimeout(() => {}, 50);
   }
   return editorMap[id];
 };

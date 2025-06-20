@@ -16,20 +16,18 @@ interface GroupButton {
 
 const buttonAction = (key: Formatter, id: string) => {
   return () => {
+    console.log('button action');
     const editor = getEditor(id);
-    if (!editor) {
-      console.log(`Editor not initialized for key: ${key}`);
-      return () => {};
-    }
+    console.log(editor);
     switch (key) {
       case Formatter.UNDERLINE:
-        // editor.commands.toggleUnderline();
+        editor.commands.toggleUnderline();
         break;
       case Formatter.BOLD:
-        editor.chain().focus().toggleBold().run();
+        editor.commands.toggleBold();
         break;
       case Formatter.ITALIC:
-        editor.chain().focus().toggleItalic().run();
+        editor.commands.toggleItalic();
         break;
       default:
         break;
