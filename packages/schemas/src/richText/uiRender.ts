@@ -6,10 +6,13 @@ import { initEditor } from './editor';
 
 export const uiRender = (arg: UIRenderProps<RichTextSchema>) => {
   const { rootElement } = arg;
-  console.log('uiRender', arg);
+
+  if (!arg.schema.id || typeof arg.schema.id !== 'string' || arg.schema.id === 'richText') {
+    return;
+  }
   const container = document.createElement('div');
 
-  container.className = 'rich-text-editor';
+  container.className = `richText${arg.schema.id}`;
   container.style.width = '100%';
   container.style.height = '100%';
 
@@ -20,8 +23,8 @@ export const uiRender = (arg: UIRenderProps<RichTextSchema>) => {
       width: 100%;
       height: 100%;
     }
-    .rich-text-editor strong { font-family: ${DEFAULT_BOLD_FONT};}
+    .richText${arg.schema.id} strong { font-family: ${DEFAULT_BOLD_FONT};}
   `;
   document.head.appendChild(style);
-  initEditor();
+  initEditor(arg.schema.id);
 };
