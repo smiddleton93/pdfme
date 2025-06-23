@@ -9,7 +9,7 @@ import { PDFDocument, PDFFont, PDFPage, rgb, RGB } from '@pdfme/pdf-lib';
 import { type ChildNode as Node, type Element } from 'domhandler';
 import { RichTextSchema } from './types';
 import * as richTextFonts from './fonts';
-import { DEFAULT_FONT_NAME, Font, getDefaultFont } from '@pdfme/common';
+import { DEFAULT_FONT_NAME, Font, getDefaultFont, mm2pt } from '@pdfme/common';
 import { convertForPdfLayoutProps } from '../utils';
 // const DEFAULT_BOLD_FONT = 'Roboto-Bold';
 // const DEFAULT_ITALIC_FONT = 'Roboto-Italic';
@@ -114,20 +114,13 @@ const fonts: Font = {
   ...getDefaultFont(),
 };
 
-// --- Main Function ---
-
 export async function drawHtmlWithSchema(
   pdfDoc: PDFDocument,
   page: PDFPage,
   htmlString: string,
   schema: RichTextSchema,
 ): Promise<void> {
-  // const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  // const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  // const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-  // const fontBoldItalic = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
-
-  const defaultFontSize = 10;
+  const defaultFontSize = 13;
 
   const _cache = new Map();
 
@@ -135,17 +128,15 @@ export async function drawHtmlWithSchema(
 
   const {
     width,
-    // height,
     position: { x, y },
   } = convertForPdfLayoutProps({ schema, pageHeight, applyRotateTranslate: false });
-
+  console.log({ x, y });
   const [pdfFontObj] = await Promise.all([
     embedAndGetFontObj({
       pdfDoc,
       font: fonts,
       _cache,
     }),
-    // getFontKitFont(schema.fontName, fonts, _cache),
   ]);
 
   const htmlTree = parseDocument(htmlString);
@@ -177,15 +168,11 @@ export async function drawHtmlWithSchema(
       const element = node as Element;
       const newStyle: Style = { ...inheritedStyle };
 
-      // const schemaStyle = schema.styles[element.name];
-      // if (schemaStyle?.fontSize) newStyle.fontSize = schemaStyle.fontSize;
-      // if (schemaStyle?.color) newStyle.color = schemaStyle.color;
       if (element.name === 'u') newStyle.underline = true;
       if (element.name === 'strong') newStyle.bold = true;
       if (element.name === 'em') newStyle.italic = true;
-      console.log({ newStyle });
       newStyle.fontName = getFontName(newStyle);
-      console.log('Font name:', newStyle.fontName, 'for element:', element.name);
+
       if (element.attribs?.style) {
         const inlineStyles = parseInlineStyles(element.attribs.style);
         Object.assign(newStyle, inlineStyles);
@@ -246,8 +233,8 @@ export async function drawHtmlWithSchema(
   const blocks: Block[] = blocksNested.flat();
 
   // --- Render blocks one by one ---
-
-  let cursorY = y;
+  const startY = pageHeight - mm2pt(schema.position.y);
+  let cursorY = startY;
 
   for (const block of blocks) {
     cursorY = wrapAndDrawBlock(block.runs, cursorY, block.type === 'list-item' ? 8 : 0);
@@ -259,8 +246,8 @@ export async function drawHtmlWithSchema(
   function wrapAndDrawBlock(runs: TextRun[], startY: number, leftIndent: number): number {
     let currentLine: TextRun[] = [];
     let currentLineWidth = 0;
+    console.log({ startY });
     let cursorY = startY;
-    console.log('Drawing block at Y:', cursorY);
 
     for (const run of runs) {
       const words = run.text.split(/(\s+)/).filter((w) => w.trim() !== '' || w === ' ');
