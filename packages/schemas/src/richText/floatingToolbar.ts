@@ -45,6 +45,92 @@ const orderedListSVG = `
   <line x1="9" y1="18" x2="20" y2="18"></line>
 </svg>`;
 
+function getDefaultColor(editor: Editor, pickr: Pickr | null) {
+  const { state } = editor;
+  const { from, to } = state.selection;
+  const colors = new Set<string>();
+
+  state.doc.nodesBetween(from, to, (node) => {
+    node.marks.forEach((mark) => {
+      if (
+        mark.type.name === 'textStyle' &&
+        mark.attrs.color &&
+        typeof mark.attrs.color === 'string'
+      ) {
+        colors.add(mark.attrs.color);
+      }
+    });
+  });
+
+  let color: string | null;
+
+  if (colors.size === 1) {
+    color = [...colors][0];
+  } else {
+    color = '#000000';
+  }
+
+  if (pickr) {
+    pickr.setColor(color, true);
+  }
+
+  return color;
+}
+
+function initPickr(toolbar: HTMLDivElement, editor: Editor) {
+  const pickrContainer = document.createElement('div');
+
+  toolbar.appendChild(pickrContainer);
+
+  const defaultColor = getDefaultColor(editor, null);
+
+  const pickr = Pickr.create({
+    el: pickrContainer,
+    theme: 'nano',
+    default: defaultColor,
+    lockOpacity: true,
+    components: {
+      preview: true,
+      opacity: false,
+      hue: true,
+      interaction: {
+        hex: true,
+        rgba: false,
+        hsla: false,
+        hsva: false,
+        cmyk: false,
+        input: true,
+        save: true,
+        clear: false,
+      },
+    },
+  });
+
+  pickr.on('init', () => {
+    document.addEventListener('mousedown', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('pcr-button')) {
+        e.preventDefault();
+      }
+    });
+  });
+
+  pickr.on('save', (color: Pickr.HSVaColor) => {
+    const hexColor = color.toHEXA().toString();
+    editor.chain().focus().setColor(hexColor).run();
+    pickr.hide();
+  });
+
+  editor.on('selectionUpdate', () => {
+    const selectedColor = getDefaultColor(editor, pickr);
+
+    if (selectedColor !== defaultColor) {
+      pickr.destroy();
+      initPickr(toolbar, editor);
+    }
+  });
+}
+
 export function createFloatingToolbar(editor: Editor, rootElement: HTMLElement): HTMLDivElement {
   const toolbar = document.createElement('div');
   toolbar.className = 'floating-toolbar';
@@ -90,40 +176,9 @@ export function createFloatingToolbar(editor: Editor, rootElement: HTMLElement):
     createButton(orderedListSVG, () => editor.chain().focus().toggleOrderedList().run()),
   );
 
-  // Create a simple container for Pickr
-  const pickrContainer = document.createElement('div');
-  pickrContainer.style.marginLeft = '8px';
-  toolbar.appendChild(pickrContainer);
-
-  // Initialize Pickr
-  const pickr = Pickr.create({
-    el: pickrContainer,
-    theme: 'nano', // or 'monolith', 'nano' (themes available)
-    default: '#000000',
-    components: {
-      preview: true,
-      opacity: false,
-      hue: false,
-      interaction: {
-        hex: true,
-        rgba: false,
-        hsla: false,
-        hsva: false,
-        cmyk: false,
-        input: true,
-        save: true,
-        clear: false,
-      },
-    },
-  });
-
-  pickr.on('save', (color: Pickr) => {
-    console.log('save', color.getColor().toHEXA().toString());
-    pickr.hide();
-  });
+  initPickr(toolbar, editor);
 
   document.body.appendChild(toolbar);
-
   function updatePosition() {
     const rect = rootElement.getBoundingClientRect();
     const verticalOffset = 10;
