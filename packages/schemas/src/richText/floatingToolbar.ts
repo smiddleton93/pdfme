@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
+import '@simonwep/pickr/dist/themes/nano.min.css';
+import Pickr from '@simonwep/pickr';
 
 import { Editor } from '@tiptap/core';
 
@@ -21,6 +23,26 @@ const underlineSVG = `
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <path d="M6 4v6a6 6 0 0 0 12 0V4"></path>
   <line x1="4" y1="20" x2="20" y2="20"></line>
+</svg>`;
+
+const bulletListSVG = `
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="5" cy="6" r="1"></circle>
+  <circle cx="5" cy="12" r="1"></circle>
+  <circle cx="5" cy="18" r="1"></circle>
+  <line x1="9" y1="6" x2="20" y2="6"></line>
+  <line x1="9" y1="12" x2="20" y2="12"></line>
+  <line x1="9" y1="18" x2="20" y2="18"></line>
+</svg>`;
+
+const orderedListSVG = `
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M4 6h1"></path>
+  <path d="M4 12h2"></path>
+  <path d="M4 18h3"></path>
+  <line x1="9" y1="6" x2="20" y2="6"></line>
+  <line x1="9" y1="12" x2="20" y2="12"></line>
+  <line x1="9" y1="18" x2="20" y2="18"></line>
 </svg>`;
 
 export function createFloatingToolbar(editor: Editor, rootElement: HTMLElement): HTMLDivElement {
@@ -61,27 +83,44 @@ export function createFloatingToolbar(editor: Editor, rootElement: HTMLElement):
   );
   toolbar.appendChild(createButton(boldSVG, () => editor.chain().focus().toggleBold().run()));
   toolbar.appendChild(createButton(italicSVG, () => editor.chain().focus().toggleItalic().run()));
+  toolbar.appendChild(
+    createButton(bulletListSVG, () => editor.chain().focus().toggleBulletList().run()),
+  );
+  toolbar.appendChild(
+    createButton(orderedListSVG, () => editor.chain().focus().toggleOrderedList().run()),
+  );
 
-  const colorPicker = document.createElement('input');
-  colorPicker.type = 'color';
-  colorPicker.style.marginLeft = '8px';
-  colorPicker.style.border = 'none';
-  colorPicker.style.width = '32px';
-  colorPicker.style.height = '32px';
-  colorPicker.style.cursor = 'pointer';
-  colorPicker.style.background = 'transparent';
-  colorPicker.style.padding = '0';
+  // Create a simple container for Pickr
+  const pickrContainer = document.createElement('div');
+  pickrContainer.style.marginLeft = '8px';
+  toolbar.appendChild(pickrContainer);
 
-  colorPicker.addEventListener('mousedown', (e) => e.preventDefault());
-  colorPicker.addEventListener('input', (e: Event) => {
-    const target = e.target as HTMLInputElement | null;
-    const color = target?.value;
-    if (color) {
-      editor.chain().focus().setColor(color).run();
-    }
+  // Initialize Pickr
+  const pickr = Pickr.create({
+    el: pickrContainer,
+    theme: 'nano', // or 'monolith', 'nano' (themes available)
+    default: '#000000',
+    components: {
+      preview: true,
+      opacity: false,
+      hue: false,
+      interaction: {
+        hex: true,
+        rgba: false,
+        hsla: false,
+        hsva: false,
+        cmyk: false,
+        input: true,
+        save: true,
+        clear: false,
+      },
+    },
   });
 
-  toolbar.appendChild(colorPicker);
+  pickr.on('save', (color: Pickr) => {
+    console.log('save', color.getColor().toHEXA().toString());
+    pickr.hide();
+  });
 
   document.body.appendChild(toolbar);
 
