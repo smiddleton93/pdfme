@@ -45,7 +45,7 @@ const orderedListSVG = `
   <line x1="9" y1="18" x2="20" y2="18"></line>
 </svg>`;
 
-function getDefaultColor(editor: Editor, pickr: Pickr | null) {
+function updatePickrColor(editor: Editor, pickr: Pickr | null) {
   const { state } = editor;
   const { from, to } = state.selection;
   const colors = new Set<string>();
@@ -71,64 +71,8 @@ function getDefaultColor(editor: Editor, pickr: Pickr | null) {
   }
 
   if (pickr) {
-    pickr.setColor(color, true);
+    pickr.setColor(color);
   }
-
-  return color;
-}
-
-function initPickr(toolbar: HTMLDivElement, editor: Editor) {
-  const pickrContainer = document.createElement('div');
-
-  toolbar.appendChild(pickrContainer);
-
-  const defaultColor = getDefaultColor(editor, null);
-
-  const pickr = Pickr.create({
-    el: pickrContainer,
-    theme: 'nano',
-    default: defaultColor,
-    lockOpacity: true,
-    components: {
-      preview: true,
-      opacity: false,
-      hue: true,
-      interaction: {
-        hex: true,
-        rgba: false,
-        hsla: false,
-        hsva: false,
-        cmyk: false,
-        input: true,
-        save: true,
-        clear: false,
-      },
-    },
-  });
-
-  pickr.on('init', () => {
-    document.addEventListener('mousedown', (e) => {
-      const target = e.target as HTMLElement;
-      if (target.classList.contains('pcr-button')) {
-        e.preventDefault();
-      }
-    });
-  });
-
-  pickr.on('save', (color: Pickr.HSVaColor) => {
-    const hexColor = color.toHEXA().toString();
-    editor.chain().focus().setColor(hexColor).run();
-    pickr.hide();
-  });
-
-  editor.on('selectionUpdate', () => {
-    const selectedColor = getDefaultColor(editor, pickr);
-
-    if (selectedColor !== defaultColor) {
-      pickr.destroy();
-      initPickr(toolbar, editor);
-    }
-  });
 }
 
 export function createFloatingToolbar(editor: Editor, rootElement: HTMLElement): HTMLDivElement {
@@ -176,9 +120,55 @@ export function createFloatingToolbar(editor: Editor, rootElement: HTMLElement):
     createButton(orderedListSVG, () => editor.chain().focus().toggleOrderedList().run()),
   );
 
-  initPickr(toolbar, editor);
+  const pickrContainer = document.createElement('div');
+
+  toolbar.appendChild(pickrContainer);
+
+  // Initialize Pickr
+  const pickr = Pickr.create({
+    el: pickrContainer,
+    theme: 'nano',
+    default: '#000000',
+    lockOpacity: true,
+    components: {
+      preview: true,
+      opacity: false,
+      hue: true,
+      interaction: {
+        hex: true,
+        rgba: false,
+        hsla: false,
+        hsva: false,
+        cmyk: false,
+        input: true,
+        save: true,
+        clear: false,
+      },
+    },
+  });
+
+  pickr.on('init', () => {
+    console.log('Pickr initialized');
+
+    document.addEventListener('mousedown', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('pcr-button')) {
+        e.preventDefault();
+        console.log('Pickr button click prevented');
+      }
+    });
+  });
+
+  pickr.on('save', (color: Pickr.HSVaColor) => {
+    const hexColor = color.toHEXA().toString();
+    const focusedText = editor.state.selection;
+    console.log('Focused text:', focusedText);
+    editor.chain().focus().setColor(hexColor).run();
+    pickr.hide();
+  });
 
   document.body.appendChild(toolbar);
+
   function updatePosition() {
     const rect = rootElement.getBoundingClientRect();
     const verticalOffset = 10;
