@@ -5,6 +5,7 @@ import '@simonwep/pickr/dist/themes/nano.min.css';
 import Pickr from '@simonwep/pickr';
 
 import { Editor } from '@tiptap/core';
+import { Mode } from '@pdfme/common';
 
 const boldSVG = `
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -45,51 +46,21 @@ const orderedListSVG = `
   <line x1="9" y1="18" x2="20" y2="18"></line>
 </svg>`;
 
-function updatePickrColor(editor: Editor, pickr: Pickr | null) {
-  const { state } = editor;
-  const { from, to } = state.selection;
-  const colors = new Set<string>();
-
-  state.doc.nodesBetween(from, to, (node) => {
-    node.marks.forEach((mark) => {
-      if (
-        mark.type.name === 'textStyle' &&
-        mark.attrs.color &&
-        typeof mark.attrs.color === 'string'
-      ) {
-        colors.add(mark.attrs.color);
-      }
-    });
-  });
-
-  let color: string | null;
-
-  if (colors.size === 1) {
-    color = [...colors][0];
-  } else {
-    color = '#000000';
-  }
-
-  if (pickr) {
-    pickr.setColor(color);
-  }
-}
-
-export function createFloatingToolbar(editor: Editor, rootElement: HTMLElement): HTMLDivElement {
-  const toolbar = document.createElement('div');
-  toolbar.className = 'floating-toolbar';
+const applyToolbarStyles = (toolbar: HTMLDivElement) => {
   toolbar.contentEditable = 'false';
   toolbar.style.position = 'fixed';
   toolbar.style.zIndex = '9999';
   toolbar.style.background = '#ffffff';
   toolbar.style.border = '1px solid #ddd';
   toolbar.style.borderRadius = '8px';
-  toolbar.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+  toolbar.style.boxShadow = '0 2px 2px rgba(0,0,0,0.05)';
   toolbar.style.padding = '4px';
   toolbar.style.display = 'flex';
   toolbar.style.alignItems = 'center';
   toolbar.style.gap = '0px';
+};
 
+function createToolbarButtons(toolbar: HTMLDivElement, editor: Editor) {
   // Helper to create buttons
   function createButton(icon: string, onExecute: () => void): HTMLButtonElement {
     const button = document.createElement('button');
@@ -119,11 +90,37 @@ export function createFloatingToolbar(editor: Editor, rootElement: HTMLElement):
   toolbar.appendChild(
     createButton(orderedListSVG, () => editor.chain().focus().toggleOrderedList().run()),
   );
+}
+
+const toolbarMap: Record<string, () => void> = {};
+
+export function createFloatingToolbar(
+  id: string,
+  editor: Editor,
+  rootElement: HTMLElement,
+  mode: Mode,
+): () => void {
+  if (mode === 'viewer') {
+    return () => {
+      console.log('Viewer mode, not creating toolbar');
+    };
+  }
+  const toolbarExists = toolbarMap[id];
+  if (Boolean(toolbarExists)) {
+    toolbarExists();
+    return createFloatingToolbar(id, editor, rootElement, mode);
+  }
+  const toolbar = document.createElement('div');
+  toolbar.className = `floating-toolbar-${id}`;
+
+  applyToolbarStyles(toolbar);
+
+  createToolbarButtons(toolbar, editor);
 
   const pickrContainer = document.createElement('div');
 
   toolbar.appendChild(pickrContainer);
-
+  console.log('creating pickr', mode);
   // Initialize Pickr
   const pickr = Pickr.create({
     el: pickrContainer,
@@ -183,9 +180,19 @@ export function createFloatingToolbar(editor: Editor, rootElement: HTMLElement):
   window.addEventListener('resize', updatePosition);
   window.addEventListener('scroll', updatePosition);
 
-  // Observe mutations in case of drag/move
   const observer = new MutationObserver(updatePosition);
   observer.observe(rootElement, { attributes: true, childList: true, subtree: true });
 
-  return toolbar;
+  const destory = () => {
+    console.log('Destroying floating toolbar');
+    observer.disconnect();
+    window.removeEventListener('resize', updatePosition);
+    window.removeEventListener('scroll', updatePosition);
+    toolbar.remove();
+    pickr.destroyAndRemove();
+    delete toolbarMap[id];
+  };
+  toolbarMap[id] = destory;
+
+  return destory;
 }

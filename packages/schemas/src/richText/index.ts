@@ -11,6 +11,7 @@ const richTextSchema: Plugin<RichTextSchema> = {
   ui: uiRender,
   propPanel,
   icon: createSvgStr(MessageCircleHeart),
+  uninterruptedEditMode: true,
 };
 
 export default richTextSchema;

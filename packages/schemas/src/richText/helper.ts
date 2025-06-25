@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { parseDocument, DomUtils } from 'htmlparser2';
-// import * as fontkit from 'fontkit';
 import { PDFDocument, PDFFont, PDFPage, rgb, RGB } from '@pdfme/pdf-lib';
 
 import { type ChildNode as Node, type Element } from 'domhandler';
@@ -11,10 +10,6 @@ import { RichTextSchema } from './types';
 import * as richTextFonts from './fonts';
 import { DEFAULT_FONT_NAME, Font, getDefaultFont, mm2pt } from '@pdfme/common';
 import { convertForPdfLayoutProps } from '../utils';
-// const DEFAULT_BOLD_FONT = 'Roboto-Bold';
-// const DEFAULT_ITALIC_FONT = 'Roboto-Italic';
-// const DEFAULT_BOLD_ITALIC_FONT = 'Roboto-BoldItalic';
-// --- Types ---
 
 type Style = {
   fontSize?: number;
