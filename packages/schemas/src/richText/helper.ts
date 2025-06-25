@@ -123,9 +123,9 @@ export async function drawHtmlWithSchema(
 
   const {
     width,
-    position: { x, y },
+    position: { x },
   } = convertForPdfLayoutProps({ schema, pageHeight, applyRotateTranslate: false });
-  console.log({ x, y });
+
   const [pdfFontObj] = await Promise.all([
     embedAndGetFontObj({
       pdfDoc,
