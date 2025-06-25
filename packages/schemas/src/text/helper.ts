@@ -99,7 +99,6 @@ export const widthOfTextAtSize = (
   const standardWidth =
     glyphs.reduce((totalWidth, glyph) => totalWidth + glyph.advanceWidth * scale, 0) *
     (fontSize / 1000);
-
   return standardWidth + calculateCharacterSpacing(text, characterSpacing);
 };
 
@@ -145,7 +144,6 @@ export const getFontKitFont = async (
 const isTextExceedingBoxWidth = (text: string, calcValues: FontWidthCalcValues) => {
   const { font, fontSize, characterSpacing, boxWidthInPt } = calcValues;
   const textWidth = widthOfTextAtSize(text, font, fontSize, characterSpacing);
-
   return textWidth > boxWidthInPt;
 };
 

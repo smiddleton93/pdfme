@@ -14,7 +14,6 @@ import {
   select,
   checkbox,
   radioGroup,
-  richText,
 } from '@pdfme/schemas';
 import { signature } from './signature';
 
@@ -36,7 +35,6 @@ export const getPlugins = () => {
     Select: select,
     Checkbox: checkbox,
     RadioGroup: radioGroup,
-    RichText: richText,
     // JAPANPOST: barcodes.japanpost,
     EAN13: barcodes.ean13,
     // EAN8: barcodes.ean8,

@@ -66,7 +66,6 @@ const DetailView = (props: DetailViewProps) => {
     };
     for (const plugin of pluginsRegistry.values()) {
       const widgets = plugin.propPanel.widgets || {};
-
       Object.entries(widgets).forEach(([widgetKey, widgetValue]) => {
         newWidgets[widgetKey] = (p) => (
           <WidgetRenderer
