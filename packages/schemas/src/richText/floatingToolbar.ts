@@ -61,7 +61,6 @@ const applyToolbarStyles = (toolbar: HTMLDivElement) => {
 };
 
 function createToolbarButtons(toolbar: HTMLDivElement, editor: Editor) {
-  // Helper to create buttons
   function createButton(icon: string, onExecute: () => void): HTMLButtonElement {
     const button = document.createElement('button');
     button.type = 'button';
@@ -101,9 +100,7 @@ export function createFloatingToolbar(
   mode: Mode,
 ): () => void {
   if (mode === 'viewer') {
-    return () => {
-      console.log('Viewer mode, not creating toolbar');
-    };
+    return () => {};
   }
   const toolbarExists = toolbarMap[id];
   if (Boolean(toolbarExists)) {
@@ -120,8 +117,7 @@ export function createFloatingToolbar(
   const pickrContainer = document.createElement('div');
 
   toolbar.appendChild(pickrContainer);
-  console.log('creating pickr', mode);
-  // Initialize Pickr
+
   const pickr = Pickr.create({
     el: pickrContainer,
     theme: 'nano',
@@ -145,21 +141,17 @@ export function createFloatingToolbar(
   });
 
   pickr.on('init', () => {
-    console.log('Pickr initialized');
-
     document.addEventListener('mousedown', (e) => {
       const target = e.target as HTMLElement;
       if (target.classList.contains('pcr-button')) {
         e.preventDefault();
-        console.log('Pickr button click prevented');
       }
     });
   });
 
   pickr.on('save', (color: Pickr.HSVaColor) => {
     const hexColor = color.toHEXA().toString();
-    const focusedText = editor.state.selection;
-    console.log('Focused text:', focusedText);
+
     editor.chain().focus().setColor(hexColor).run();
     pickr.hide();
   });
@@ -173,10 +165,8 @@ export function createFloatingToolbar(
     toolbar.style.top = `${rect.top - toolbar.offsetHeight - verticalOffset}px`;
   }
 
-  // Position after first render
   requestAnimationFrame(updatePosition);
 
-  // Handle window resize & scroll
   window.addEventListener('resize', updatePosition);
   window.addEventListener('scroll', updatePosition);
 
@@ -184,7 +174,6 @@ export function createFloatingToolbar(
   observer.observe(rootElement, { attributes: true, childList: true, subtree: true });
 
   const destory = () => {
-    console.log('Destroying floating toolbar');
     observer.disconnect();
     window.removeEventListener('resize', updatePosition);
     window.removeEventListener('scroll', updatePosition);

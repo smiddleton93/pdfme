@@ -193,7 +193,6 @@ export async function drawHtmlWithSchema(
         return blocks;
       }
 
-      // Handle normal tags
       let blocks: Block[] = [];
       for (const child of element.children) {
         const childBlocks = parseNode(child, newStyle, element.name, listType, listIndex);
@@ -205,7 +204,6 @@ export async function drawHtmlWithSchema(
     return [];
   }
 
-  // Merge adjacent inline nodes into same block when appropriate
   function mergeBlocks(existing: Block[], incoming: Block[], parentTag: string | null): Block[] {
     if (existing.length === 0) return incoming;
     if (incoming.length === 0) return existing;
@@ -215,7 +213,6 @@ export async function drawHtmlWithSchema(
       existing[existing.length - 1].type === 'paragraph' &&
       incoming[0].type === 'paragraph'
     ) {
-      // Merge runs into same paragraph
       existing[existing.length - 1].runs.push(...incoming[0].runs);
       return existing.concat(incoming.slice(1));
     }
@@ -227,16 +224,13 @@ export async function drawHtmlWithSchema(
   );
   const blocks: Block[] = blocksNested.flat();
 
-  // --- Render blocks one by one ---
   const startY = pageHeight - mm2pt(schema.position.y);
   let cursorY = startY;
 
   for (const block of blocks) {
     cursorY = wrapAndDrawBlock(block.runs, cursorY, block.type === 'list-item' ? 8 : 0);
-    cursorY -= 8; // vertical gap between blocks
+    cursorY -= 8;
   }
-
-  // --- Rendering functions ---
 
   function wrapAndDrawBlock(runs: TextRun[], startY: number, leftIndent: number): number {
     let currentLine: TextRun[] = [];
@@ -256,7 +250,6 @@ export async function drawHtmlWithSchema(
         const wordWidth = font.widthOfTextAtSize(safeWord, fontSize);
 
         if (currentLineWidth + wordWidth > width - leftIndent) {
-          // Draw current line
           drawLine(currentLine, cursorY, leftIndent);
           cursorY -= fontSize + 4;
           currentLine = [];
