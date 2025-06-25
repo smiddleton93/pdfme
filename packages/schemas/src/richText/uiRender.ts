@@ -47,24 +47,16 @@ export const uiRender = (arg: UIRenderProps<RichTextSchema>): void => {
   editor.on('focus', () => {
     const destroyFn = createFloatingToolbar(schemaId, editor, rootElement, arg.mode);
     editor.on('blur', (e) => {
+      const content = editor.getHTML();
+      if (content != null) {
+        onChange?.({ key: 'content', value: content });
+      }
       const eventSource = e.event.relatedTarget as HTMLElement | null;
       if (eventSource && eventSource.classList.contains('pcr-save')) {
         return;
       }
       destroyFn();
+      stopEditing?.();
     });
-  });
-
-  editor.on('blur', (e) => {
-    const content = editor.getHTML();
-    if (content != null) {
-      onChange?.({ key: 'content', value: content });
-    }
-    const eventSource = e.event.relatedTarget as HTMLElement | null;
-
-    if (eventSource && eventSource.classList.contains('pcr-save')) {
-      return;
-    }
-    stopEditing?.();
   });
 };

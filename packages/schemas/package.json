@@ -56,7 +56,6 @@
   },
   "dependencies": {
     "@pdfme/pdf-lib": "*",
-    "@simonwep/pickr": "^1.9.1",
     "@tiptap/core": "^2.14.0",
     "@tiptap/extension-bold": "^2.14.0",
     "@tiptap/extension-bullet-list": "^2.22.3",
@@ -76,7 +75,8 @@
     "domhandler": "^5.0.3",
     "fontkit": "^2.0.2",
     "htmlparser2": "^10.0.0",
-    "lucide": "^0.511.0"
+    "lucide": "^0.511.0",
+    "vanilla-picker": "^2.12.3"
   },
   "devDependencies": {
     "@pdfme/common": "*",

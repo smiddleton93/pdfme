@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import '@simonwep/pickr/dist/themes/nano.min.css';
-import Pickr from '@simonwep/pickr';
 
 import { Editor } from '@tiptap/core';
 import { Mode } from '@pdfme/common';
+import type Picker from 'vanilla-picker';
+import type { Color } from 'vanilla-picker';
 
 const boldSVG = `
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -59,7 +60,6 @@ const applyToolbarStyles = (toolbar: HTMLDivElement) => {
   toolbar.style.alignItems = 'center';
   toolbar.style.gap = '0px';
 };
-
 function createToolbarButtons(toolbar: HTMLDivElement, editor: Editor) {
   function createButton(icon: string, onExecute: () => void): HTMLButtonElement {
     const button = document.createElement('button');
@@ -89,6 +89,43 @@ function createToolbarButtons(toolbar: HTMLDivElement, editor: Editor) {
   toolbar.appendChild(
     createButton(orderedListSVG, () => editor.chain().focus().toggleOrderedList().run()),
   );
+
+  const colorButton = document.createElement('button');
+  colorButton.type = 'button';
+  colorButton.style.width = '32px';
+  colorButton.style.height = '32px';
+  colorButton.style.border = '1px solid #ddd';
+  colorButton.style.marginLeft = '8px';
+  colorButton.style.backgroundColor = '#000'; // Default black
+  colorButton.style.cursor = 'pointer';
+  colorButton.className = 'pcr-save';
+  let picker: Picker | null = null;
+  colorButton.addEventListener('click', async (e) => {
+    if (!picker) {
+      const { default: Picker } = await import('vanilla-picker');
+
+      picker = new Picker({
+        parent: colorButton,
+        popup: 'bottom',
+        color: '#000000',
+        editorFormat: 'hex',
+        alpha: false,
+        onDone: (color: Color) => {
+          // We need to remove the alpha channel if it exists
+          let hex = color.hex;
+          if (color.hex.length === 9 && color.hex.startsWith('#')) {
+            hex = `#${color.hex.slice(1, 7)}`;
+          }
+          colorButton.style.backgroundColor = hex;
+          editor.chain().focus().setColor(hex).run();
+        },
+      });
+    }
+
+    picker.openHandler(e);
+  });
+
+  toolbar.appendChild(colorButton);
 }
 
 const toolbarMap: Record<string, () => void> = {};
@@ -118,44 +155,6 @@ export function createFloatingToolbar(
 
   toolbar.appendChild(pickrContainer);
 
-  const pickr = Pickr.create({
-    el: pickrContainer,
-    theme: 'nano',
-    default: '#000000',
-    lockOpacity: true,
-    components: {
-      preview: true,
-      opacity: false,
-      hue: true,
-      interaction: {
-        hex: true,
-        rgba: false,
-        hsla: false,
-        hsva: false,
-        cmyk: false,
-        input: true,
-        save: true,
-        clear: false,
-      },
-    },
-  });
-
-  pickr.on('init', () => {
-    document.addEventListener('mousedown', (e) => {
-      const target = e.target as HTMLElement;
-      if (target.classList.contains('pcr-button')) {
-        e.preventDefault();
-      }
-    });
-  });
-
-  pickr.on('save', (color: Pickr.HSVaColor) => {
-    const hexColor = color.toHEXA().toString();
-
-    editor.chain().focus().setColor(hexColor).run();
-    pickr.hide();
-  });
-
   document.body.appendChild(toolbar);
 
   function updatePosition() {
@@ -178,7 +177,6 @@ export function createFloatingToolbar(
     window.removeEventListener('resize', updatePosition);
     window.removeEventListener('scroll', updatePosition);
     toolbar.remove();
-    pickr.destroyAndRemove();
     delete toolbarMap[id];
   };
   toolbarMap[id] = destory;

@@ -1,4 +1,5 @@
 import { Template, Font, checkTemplate, getInputFromTemplate, getDefaultFont } from '@pdfme/common';
+import { richTextFonts } from '@pdfme/schemas';
 import { Form, Viewer, Designer } from '@pdfme/ui';
 import { generate } from '@pdfme/generator';
 import { getPlugins } from './plugins';
@@ -23,7 +24,16 @@ export const getFontsData = (): Font => ({
   NotoSansJP: {
     fallback: false,
     data: 'https://fonts.gstatic.com/s/notosansjp/v53/-F6jfjtqLzI2JPCgQBnw7HFyzSD-AsregP8VFBEj75vY0rw-oME.ttf',
-  }
+  },
+  [richTextFonts.DEFAULT_BOLD_FONT]: {
+    data: richTextFonts.DEFAULT_BOLD_FONT_DATA,
+  },
+  [richTextFonts.DEFAULT_ITALIC_FONT]: {
+    data: richTextFonts.DEFAULT_ITALIC_FONT_DATA,
+  },
+  [richTextFonts.DEFAULT_BOLD_ITALIC_FONT]: {
+    data: richTextFonts.DEFAULT_BOLD_ITALIC_DATA,
+  },
 });
 
 export const readFile = (file: File | null, type: 'text' | 'dataURL' | 'arrayBuffer') => {

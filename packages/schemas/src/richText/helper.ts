@@ -235,7 +235,6 @@ export async function drawHtmlWithSchema(
   function wrapAndDrawBlock(runs: TextRun[], startY: number, leftIndent: number): number {
     let currentLine: TextRun[] = [];
     let currentLineWidth = 0;
-    console.log({ startY });
     let cursorY = startY;
 
     for (const run of runs) {
