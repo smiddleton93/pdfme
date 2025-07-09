@@ -1,14 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { parseDocument, DomUtils } from 'htmlparser2';
 import { PDFDocument, PDFFont, PDFPage, rgb, RGB } from '@pdfme/pdf-lib';
+import { DEFAULT_FONT_NAME, Font, getDefaultFont, mm2pt } from '@pdfme/common';
+import { type ChildNode as Node } from 'domhandler';
 
-import { type ChildNode as Node, type Element } from 'domhandler';
 import { RichTextSchema } from './types';
 import * as richTextFonts from './fonts';
-import { DEFAULT_FONT_NAME, Font, getDefaultFont, mm2pt } from '@pdfme/common';
 import { convertForPdfLayoutProps } from '../utils';
 
 type Style = {
@@ -69,7 +66,6 @@ function parseInlineStyles(styleString: string): Partial<Style> {
   for (const decl of declarations) {
     const [property, value] = decl.split(':').map((s) => s.trim().toLowerCase());
     if (!property || !value) continue;
-
     if (property === 'font-size' && value.endsWith('px')) {
       result.fontSize = parseFloat(value);
     }
@@ -150,7 +146,7 @@ export async function drawHtmlWithSchema(
     listType: 'ul' | 'ol' | null = null,
     listIndex: number = 1,
   ): Promise<Block[]> {
-    if (node.type === 'text') {
+    if (DomUtils.isText(node)) {
       return [
         {
           runs: [{ text: node.data ?? '', style: { ...inheritedStyle } }],
@@ -160,7 +156,7 @@ export async function drawHtmlWithSchema(
     }
 
     if (DomUtils.isTag(node)) {
-      const element = node as Element;
+      const element = node;
       const newStyle: Style = { ...inheritedStyle };
 
       if (element.name === 'u') newStyle.underline = true;
@@ -177,7 +173,7 @@ export async function drawHtmlWithSchema(
         const blocks: Block[] = [];
         let index = 1;
         for (const child of element.children) {
-          if (child.type === 'tag' && child.name === 'li') {
+          if (DomUtils.isTag(child) && child.name === 'li') {
             const bullet = element.name === 'ul' ? '• ' : `${index}. `;
             const childBlocks = await parseNode(child, newStyle, 'li', element.name, index);
             if (childBlocks.length > 0) {

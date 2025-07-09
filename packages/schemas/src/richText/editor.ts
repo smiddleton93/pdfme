@@ -24,7 +24,7 @@ export const initEditor = (id: string, content: string) => {
       Paragraph,
       Text,
       Underline,
-      TextStyle,
+      TextStyle.configure({ mergeNestedSpanStyles: true }),
       Color,
       BulletList,
       OrderedList,

@@ -52,7 +52,7 @@ export const uiRender = (arg: UIRenderProps<RichTextSchema>): void => {
         onChange?.({ key: 'content', value: content });
       }
       const eventSource = e.event.relatedTarget as HTMLElement | null;
-      if (eventSource && eventSource.classList.contains('pcr-save')) {
+      if (eventSource && eventSource.classList.contains('toolbar-button')) {
         return;
       }
       destroyFn();

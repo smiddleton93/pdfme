@@ -1,7 +1,4 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 
 import { Editor } from '@tiptap/core';
 import { Mode } from '@pdfme/common';
@@ -98,7 +95,7 @@ function createToolbarButtons(toolbar: HTMLDivElement, editor: Editor) {
   colorButton.style.marginLeft = '8px';
   colorButton.style.backgroundColor = '#000'; // Default black
   colorButton.style.cursor = 'pointer';
-  colorButton.className = 'pcr-save';
+  colorButton.className = 'toolbar-button';
   let picker: Picker | null = null;
   colorButton.addEventListener('click', async (e) => {
     if (!picker) {
@@ -126,6 +123,65 @@ function createToolbarButtons(toolbar: HTMLDivElement, editor: Editor) {
   });
 
   toolbar.appendChild(colorButton);
+
+  // === Font Size Button ===
+  const fontSizeButton = document.createElement('button');
+  fontSizeButton.type = 'button';
+  fontSizeButton.textContent = 'A▾'; // Simple icon-like label
+  fontSizeButton.style.padding = '8px 12px';
+  fontSizeButton.style.border = 'none';
+  fontSizeButton.style.borderRight = '1px solid #ddd';
+  fontSizeButton.style.background = 'transparent';
+  fontSizeButton.style.cursor = 'pointer';
+  fontSizeButton.style.fontSize = '16px';
+  fontSizeButton.style.position = 'relative';
+  fontSizeButton.className = 'toolbar-button';
+
+  // Dropdown menu
+  const dropdown = document.createElement('ul');
+  dropdown.style.position = 'absolute';
+  dropdown.style.top = '100%';
+  dropdown.style.left = '0';
+  dropdown.style.padding = '4px 0';
+  dropdown.style.margin = '0';
+  dropdown.style.border = '1px solid #ccc';
+  dropdown.style.background = '#fff';
+  dropdown.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+  dropdown.style.listStyle = 'none';
+  dropdown.style.display = 'none';
+  dropdown.style.zIndex = '999';
+
+  const fontSizes = ['12px', '14px', '16px', '18px', '24px', '32px'];
+  fontSizes.forEach((size) => {
+    const item = document.createElement('li');
+    item.textContent = size;
+    item.style.padding = '4px 12px';
+    item.style.cursor = 'pointer';
+    item.style.fontSize = size;
+
+    item.addEventListener('mousedown', (e) => e.preventDefault());
+    item.addEventListener('click', () => {
+      editor.chain().focus().setMark('textStyle', { fontSize: 24 }).run();
+      dropdown.style.display = 'none';
+    });
+
+    dropdown.appendChild(item);
+  });
+
+  fontSizeButton.appendChild(dropdown);
+
+  fontSizeButton.addEventListener('click', () => {
+    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+  });
+
+  // Close dropdown if clicked outside
+  document.addEventListener('click', (e) => {
+    if (!fontSizeButton.contains(e.target as Node)) {
+      dropdown.style.display = 'none';
+    }
+  });
+
+  toolbar.appendChild(fontSizeButton);
 }
 
 const toolbarMap: Record<string, () => void> = {};
